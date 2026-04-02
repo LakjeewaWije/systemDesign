@@ -41,7 +41,7 @@
 // };
 
 export const USERS_ROUTES = {
-  ADMIN: 'au/users',
+  ADMIN: 'admin/',
   VENUE: 'vu/users',
 };
 
