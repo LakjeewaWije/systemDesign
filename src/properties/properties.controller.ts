@@ -38,8 +38,12 @@ export class PropertiesController {
     return { property: res };
   }
 
+  @ApiOperation({
+    summary: 'Update Property',
+    description: 'Update an existing property for the authenticated admin user',
+  })
   @Patch(`${USERS_ROUTES.ADMIN}/properties/:propertyId`)
-  @Rights(Right.SUPER_ADMIN_ADD_PROPERTY)
+  @Rights(Right.SUPER_ADMIN_UPDATE_PROPERTY)
   async updateProperty(
     @Param('propertyId') propertyId: UUID,
     @Body() dto: UpdatePropertyDto,
@@ -61,6 +65,7 @@ export class PropertiesController {
     description:
       'Get a single property belonging to the authenticated admin user',
   })
+  @Rights(Right.SUPER_ADMIN_GET_PROPERTY)
   @Get(`${USERS_ROUTES.ADMIN}/properties/:propertyId`)
   async getProperty(
     @Param('propertyId') propertyId: UUID,
@@ -80,6 +85,7 @@ export class PropertiesController {
     summary: 'Get All Properties',
     description: 'Get all properties belonging to the authenticated admin user',
   })
+  @Rights(Right.SUPER_ADMIN_GET_ALL_PROPERTIES)
   @Get(`${USERS_ROUTES.ADMIN}/properties`)
   async getAllProperties(@Req() req: Request | any) {
     const adminUserId = req.user.userId;

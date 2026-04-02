@@ -121,7 +121,7 @@ export class PropertiesService {
           propertyId,
           admin: { userId: adminUserId },
         },
-        relations: { admin: true },
+        relations: { admin: true, outlets: true },
       });
 
       if (!property) {
@@ -140,6 +140,7 @@ export class PropertiesService {
         where: {
           admin: { userId: adminUserId },
         },
+        relations: { outlets: true },
         order: { createdAt: 'DESC' },
       });
     } catch (error) {

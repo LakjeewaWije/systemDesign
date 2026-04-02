@@ -21,6 +21,7 @@ import { HttpExceptionFilter } from './utils/http-exception.filter';
 import { SuccessResponseFilter } from './utils/success-response.filter';
 import { UsersModule } from './users/users.module';
 import { PropertiesModule } from './properties/properties.module';
+import { OutletsModule } from './outlets/outlets.module';
 
 const logDirectory = 'logs';
 const stream = rfs.createStream('application-file.log', {
@@ -116,6 +117,7 @@ const stream = rfs.createStream('application-file.log', {
     NestScheduleModule.forRoot(),
     UsersModule,
     PropertiesModule,
+    OutletsModule,
   ],
   controllers: [AppController],
   providers: [

@@ -1,7 +1,5 @@
 import { Exclude } from 'class-transformer';
 import type { UUID } from 'crypto';
-import { Outlet } from 'src/outlets/entity/outlet.entity';
-import { AdminUser } from 'src/users/entity/adminUser.entity';
 import { CommonStatus } from 'src/utils/enum/commonStatus.enum';
 import {
   Column,
@@ -9,57 +7,42 @@ import {
   Entity,
   Index,
   ManyToOne,
-  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { OutletType } from '../enum/outletType.enum';
+import { Property } from 'src/properties/entity/property.entity';
 
 @Entity()
-export class Property {
+export class Outlet {
   @PrimaryGeneratedColumn()
   @Exclude()
   id?: number;
 
   @Index()
   @PrimaryGeneratedColumn('uuid')
-  propertyId?: UUID;
+  outletId?: UUID;
 
   @Index()
   @Column({ type: 'varchar', length: 255, nullable: false })
   name?: string;
 
   @Index()
-  @Column({ type: 'varchar', length: 500, nullable: true })
-  address?: string;
-
-  @Index()
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  city?: string;
-
-  @Index()
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  country?: string;
-
-  @Index()
-  @Column({ type: 'varchar', length: 50, nullable: true })
-  phone?: string;
-
-  @Column({ type: 'varchar', length: 500, nullable: true })
-  logo?: string;
+  @Column({
+    type: 'enum',
+    enum: OutletType,
+    nullable: false,
+  })
+  type?: OutletType;
 
   @Index()
   @Column({ type: 'enum', enum: CommonStatus, default: CommonStatus.ACTIVE })
   status?: number;
 
-  // ⭐ Many Properties → One Admin
-  @ManyToOne(() => AdminUser, (admin) => admin.properties, {
+  @ManyToOne(() => Property, (property) => property.outlets, {
     onDelete: 'CASCADE',
   })
-  admin?: AdminUser;
-
-  // ⭐ One Property → Many Outlets
-  @OneToMany(() => Outlet, (outlet) => outlet.property)
-  outlets?: Outlet[];
+  property?: Property;
 
   @Index()
   @Column({ type: 'uuid', nullable: true })
