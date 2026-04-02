@@ -42,25 +42,5 @@
 
 export const USERS_ROUTES = {
   ADMIN: 'admin',
-  VENUE: 'vu/users',
-};
-
-export const USER_GROUPS_ROUTES = {
-  ADMIN: 'au/user/groups',
-  VENUE: 'vu/user/groups',
-};
-
-export const MENU_ROUTES = {
-  ADMIN: 'au/menus',
-  VENUE: 'vu/menus',
-};
-
-export const MAPS_ROUTES = {
-  ADMIN: 'au/maps',
-  VENUE: 'vu/maps',
-};
-
-export const ITEMS_ROUTES = {
-  ADMIN: 'au/items',
-  VENUE: 'vu/items',
+  CUSTOMER: 'customer',
 };
