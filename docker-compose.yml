@@ -1,0 +1,19 @@
+version: '3.8'
+services:
+  db:
+    image: ${DB_DOCKER_IMAGE}
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    container_name: ${DB_DOCKER_CONTAINER_NAME}
+    volumes:
+      - ${DB_DOCKER_VOLUME}
+    ports:
+      - '${DB_DOCKER_EXPOSE_PORT}:5432'
+  # nudenet:
+  #   image: ${NUDENET_DOCKER_IMAGE}
+  #   restart: always
+  #   ports:
+  #     - ${NUDENET_DOCKER_EXPOSE_PORT}:8080
