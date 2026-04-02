@@ -1,59 +1,59 @@
 import { Exclude } from 'class-transformer';
 import type { UUID } from 'crypto';
-import { Property } from 'src/properties/entity/property.entity';
+import { AdminUser } from 'src/users/entity/adminUser.entity';
 import { CommonStatus } from 'src/utils/enum/commonStatus.enum';
-import { Role } from 'src/utils/enum/role.enum';
 import {
   Column,
   CreateDateColumn,
   Entity,
   Index,
-  OneToMany,
+  ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 
 @Entity()
-export class AdminUser {
+export class Property {
   @PrimaryGeneratedColumn()
   @Exclude()
   id?: number;
 
   @Index()
   @PrimaryGeneratedColumn('uuid')
-  userId?: UUID;
+  propertyId?: UUID;
 
   @Index()
   @Column({ type: 'varchar', length: 255, nullable: false })
-  firstName?: string;
+  name?: string;
+
+  @Index()
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  address?: string;
 
   @Index()
   @Column({ type: 'varchar', length: 255, nullable: true })
-  lastName?: string;
+  city?: string;
 
   @Index()
-  @Column({ type: 'varchar', length: 255, default: null })
-  emailAddress?: string;
-
-  @Exclude()
-  @Column({ type: 'varchar', length: 255, default: null })
-  password?: string;
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  country?: string;
 
   @Index()
-  @Column({
-    type: 'enum',
-    enum: Role,
-    default: Role.ADMIN,
-  })
-  role?: Role;
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  phone?: string;
+
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  logo?: string;
 
   @Index()
   @Column({ type: 'enum', enum: CommonStatus, default: CommonStatus.ACTIVE })
   status?: number;
 
-  // ⭐ One Admin → Many Properties
-  @OneToMany(() => Property, (property) => property.admin)
-  properties?: Property[];
+  // ⭐ Many Properties → One Admin
+  @ManyToOne(() => AdminUser, (admin) => admin.properties, {
+    onDelete: 'CASCADE',
+  })
+  admin?: AdminUser;
 
   @Index()
   @Column({ type: 'uuid', nullable: true })

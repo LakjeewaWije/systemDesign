@@ -6,10 +6,11 @@ import { AdminUser } from './entity/adminUser.entity';
 import { AuthService } from './auth/auth.service';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { Property } from 'src/properties/entity/property.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([AdminUser]),
+    TypeOrmModule.forFeature([AdminUser, Property]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       global: true,
