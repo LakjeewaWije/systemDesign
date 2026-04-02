@@ -110,4 +110,40 @@ export class PropertiesService {
       throw error;
     }
   }
+
+  async getPropertyById(
+    propertyId: UUID,
+    adminUserId: UUID,
+  ): Promise<Property> {
+    try {
+      const property = await this.propertyRepository.findOne({
+        where: {
+          propertyId,
+          admin: { userId: adminUserId },
+        },
+        relations: { admin: true },
+      });
+
+      if (!property) {
+        throw new NotFoundException('Property not found');
+      }
+
+      return property;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getAllProperties(adminUserId: UUID): Promise<Property[]> {
+    try {
+      return await this.propertyRepository.find({
+        where: {
+          admin: { userId: adminUserId },
+        },
+        order: { createdAt: 'DESC' },
+      });
+    } catch (error) {
+      throw error;
+    }
+  }
 }

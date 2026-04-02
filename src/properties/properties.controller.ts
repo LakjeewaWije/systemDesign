@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   Param,
   Patch,
   Post,
@@ -53,5 +54,38 @@ export class PropertiesController {
     );
 
     return { property: res };
+  }
+
+  @ApiOperation({
+    summary: 'Get Property',
+    description:
+      'Get a single property belonging to the authenticated admin user',
+  })
+  @Get(`${USERS_ROUTES.ADMIN}/properties/:propertyId`)
+  async getProperty(
+    @Param('propertyId') propertyId: UUID,
+    @Req() req: Request | any,
+  ) {
+    const adminUserId = req.user.userId;
+
+    const res = await this.propertyService.getPropertyById(
+      propertyId,
+      adminUserId,
+    );
+
+    return { property: res };
+  }
+
+  @ApiOperation({
+    summary: 'Get All Properties',
+    description: 'Get all properties belonging to the authenticated admin user',
+  })
+  @Get(`${USERS_ROUTES.ADMIN}/properties`)
+  async getAllProperties(@Req() req: Request | any) {
+    const adminUserId = req.user.userId;
+
+    const res = await this.propertyService.getAllProperties(adminUserId);
+
+    return { properties: res };
   }
 }
