@@ -5,7 +5,7 @@ export class AuthService {
   constructor(private jwtService: JwtService) {}
 
   // generate jwt token if when user logs in
-  async generateJWT(payload: any, expiresIn: number): Promise<string> {
+  async generateJWT(payload: any, expiresIn: any): Promise<string> {
     try {
       return await this.jwtService.signAsync(payload, {
         expiresIn: expiresIn,

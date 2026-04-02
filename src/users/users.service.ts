@@ -1,9 +1,15 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AdminUser } from './entity/adminUser.entity';
 import { Repository } from 'typeorm';
 import { SignUpUserDto } from './dto/signup-user.dto';
 import * as bcrypt from 'bcrypt';
+import { SignInUserDto } from './dto/signin-user.dto';
 
 @Injectable()
 export class UsersService {
@@ -49,6 +55,33 @@ export class UsersService {
       if (!res) throw new BadRequestException('Created admin user not found');
 
       return res;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // signin user
+  async signinAdminUser(dto: SignInUserDto): Promise<AdminUser> {
+    try {
+      const getUser = await this.adminUserRepository.findOne({
+        where: {
+          emailAddress: dto.emailAddress,
+        },
+      });
+
+      if (!getUser)
+        throw new NotFoundException(
+          `User with Email Address ${dto.emailAddress} not found`,
+        );
+
+      const validPassword = await bcrypt.compare(
+        dto.password,
+        getUser.password,
+      );
+
+      if (!validPassword) throw new UnauthorizedException('Invalid password');
+
+      return getUser;
     } catch (error) {
       throw error;
     }
