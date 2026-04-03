@@ -30,7 +30,7 @@ export class QrController {
     description: 'Returns qrId and URL (admin view)',
   })
   @Rights(Right.SUPER_ADMIN_GET_PROPERTY_QR)
-  @Get(`${USERS_ROUTES.ADMIN}/properties/:propertyId/qr`)
+  @Get(`/api/${USERS_ROUTES.ADMIN}/properties/:propertyId/qr`)
   async getQrForProperty(@Param('propertyId') propertyId: UUID) {
     return this.qrService.getQrForProperty(propertyId);
   }
@@ -40,7 +40,7 @@ export class QrController {
     description: 'Returns the propertyId and outlets linked to QR',
   })
   @Public()
-  @Get('/qr/:qrId')
+  @Get('/api/qr/:qrId')
   async resolveQr(@Param('qrId') qrId: UUID) {
     return this.qrService.resolveQr(qrId);
   }
@@ -50,7 +50,7 @@ export class QrController {
     description: 'Set QR status to active/inactive',
   })
   @Rights(Right.SUPER_ADMIN_UPDATE_QR)
-  @Patch(`${USERS_ROUTES.ADMIN}/qr/:qrId/status`)
+  @Patch(`/api/${USERS_ROUTES.ADMIN}/qr/:qrId/status`)
   async updateQrStatus(
     @Param('qrId') qrId: UUID,
     @Body() dto: UpdatePropertyQrDto,

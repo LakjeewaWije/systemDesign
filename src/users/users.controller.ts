@@ -8,7 +8,7 @@ import { UsersService } from './users.service';
 import { SignInUserDto } from './dto/signin-user.dto';
 import { Right } from 'src/utils/enum/right.enum';
 
-@Controller('users')
+@Controller()
 export class UsersController {
   constructor(
     private readonly authService: AuthService,
@@ -20,7 +20,7 @@ export class UsersController {
     description: 'Signup as admin user',
   })
   @Public()
-  @Post(`${USERS_ROUTES.ADMIN}/signup`)
+  @Post(`/api/users/${USERS_ROUTES.ADMIN}/signup`)
   async signupUser(@Body() dto: SignUpUserDto, @Req() req: Request) {
     const res = await this.usersService.signupAdminUser(dto);
 
@@ -32,7 +32,7 @@ export class UsersController {
     description: 'Signin as admin user',
   })
   @Public()
-  @Post(`${USERS_ROUTES.ADMIN}/signin`)
+  @Post(`/api/users/${USERS_ROUTES.ADMIN}/signin`)
   async signinUser(@Body() dto: SignInUserDto, @Req() req: Request) {
     var resUser = await this.usersService.signinAdminUser(dto);
 

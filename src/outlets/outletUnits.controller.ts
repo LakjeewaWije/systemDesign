@@ -37,7 +37,7 @@ export class OutletUnitsController {
     description: 'Add table/room numbers to an outlet using a numeric range',
   })
   @Rights(Right.SUPER_ADMIN_ADD_OUTLET_UNITS)
-  @Post(`${USERS_ROUTES.ADMIN}/outlets/:outletId/units/range`)
+  @Post(`/api/${USERS_ROUTES.ADMIN}/outlets/:outletId/units/range`)
   async addUnitsRange(
     @Param('outletId') outletId: UUID,
     @Body() dto: AddUnitsRangeDto,
@@ -59,7 +59,7 @@ export class OutletUnitsController {
     description: 'Update the status and booking status of an outlet unit',
   })
   @Rights(Right.SUPER_ADMIN_UPDATE_OUTLET_UNITS)
-  @Patch(`${USERS_ROUTES.ADMIN}/outlets/:outletId/units/:unitId`)
+  @Patch(`/api/${USERS_ROUTES.ADMIN}/outlets/:outletId/units/:unitId`)
   async updateUnit(
     @Param('outletId') outletId: UUID,
     @Param('unitId') unitId: UUID,
@@ -82,7 +82,7 @@ export class OutletUnitsController {
     description: 'Get a single outlet unit by ID',
   })
   @Rights(Right.SUPER_ADMIN_GET_OUTLET_UNIT)
-  @Get(`${USERS_ROUTES.ADMIN}/outlets/:outletId/units/:unitId`)
+  @Get(`/api/${USERS_ROUTES.ADMIN}/outlets/:outletId/units/:unitId`)
   async getUnit(
     @Param('outletId') outletId: UUID,
     @Param('unitId') unitId: UUID,
@@ -100,7 +100,7 @@ export class OutletUnitsController {
     description: 'Get all units for a specific outlet',
   })
   @Rights(Right.SUPER_ADMIN_GET_ALL_OUTLET_UNITS)
-  @Get(`${USERS_ROUTES.ADMIN}/outlets/:outletId/units`)
+  @Get(`/api/${USERS_ROUTES.ADMIN}/outlets/:outletId/units`)
   async getAllUnitsForOutlet(
     @Param('outletId') outletId: UUID,
     @Req() req: Request | any,

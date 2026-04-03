@@ -7,11 +7,13 @@ import {
   Index,
   JoinTable,
   ManyToMany,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { Outlet } from 'src/outlets/entity/outlet.entity';
 import { CommonStatus } from 'src/utils/enum/commonStatus.enum';
+import { OrderItem } from 'src/orders/entity/orderItem.entity';
 
 @Entity()
 export class Menuitem {
@@ -40,6 +42,9 @@ export class Menuitem {
   })
   @JoinTable()
   outlets?: Outlet[];
+
+  @OneToMany(() => OrderItem, (orderItem) => orderItem.menuitem)
+  orderItems?: OrderItem[];
 
   @Column({ type: 'uuid', nullable: true })
   createdBy?: UUID;

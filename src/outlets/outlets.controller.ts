@@ -30,7 +30,7 @@ export class OutletsController {
     description: 'Create an outlet for a specific property',
   })
   @Rights(Right.SUPER_ADMIN_ADD_OUTLET)
-  @Post(`${USERS_ROUTES.ADMIN}/properties/:propertyId/outlets`)
+  @Post(`/api/${USERS_ROUTES.ADMIN}/properties/:propertyId/outlets`)
   async createOutlet(
     @Param('propertyId') propertyId: UUID,
     @Body() dto: CreateOutletDto,
@@ -52,7 +52,7 @@ export class OutletsController {
     description: 'Update an outlet belonging to a property owned by the admin',
   })
   @Rights(Right.SUPER_ADMIN_UPDATE_OUTLET)
-  @Patch(`${USERS_ROUTES.ADMIN}/outlets/:outletId`)
+  @Patch(`/api/${USERS_ROUTES.ADMIN}/outlets/:outletId`)
   async updateOutlet(
     @Param('outletId') outletId: UUID,
     @Body() dto: UpdateOutletDto,
@@ -75,7 +75,7 @@ export class OutletsController {
       'Get a single outlet belonging to the authenticated admin user',
   })
   @Rights(Right.SUPER_ADMIN_GET_OUTLET)
-  @Get(`${USERS_ROUTES.ADMIN}/outlets/:outletId`)
+  @Get(`/api/${USERS_ROUTES.ADMIN}/outlets/:outletId`)
   async getOutlet(
     @Param('outletId') outletId: UUID,
     @Req() req: Request | any,
@@ -92,7 +92,7 @@ export class OutletsController {
     description: 'Get all outlets belonging to the authenticated admin user',
   })
   @Rights(Right.SUPER_ADMIN_GET_ALL_OUTLETS)
-  @Get(`${USERS_ROUTES.ADMIN}/outlets`)
+  @Get(`/api/${USERS_ROUTES.ADMIN}/outlets`)
   async getAllOutlets(@Req() req: Request | any) {
     const adminUserId = req.user.userId;
 

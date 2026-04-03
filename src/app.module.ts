@@ -24,6 +24,7 @@ import { PropertiesModule } from './properties/properties.module';
 import { OutletsModule } from './outlets/outlets.module';
 import { MenuitemModule } from './menuitems/menuitem.module';
 import { QrModule } from './qr/qr.module';
+import { OrdersModule } from './orders/orders.module';
 
 const logDirectory = 'logs';
 const stream = rfs.createStream('application-file.log', {
@@ -122,6 +123,7 @@ const stream = rfs.createStream('application-file.log', {
     OutletsModule,
     MenuitemModule,
     QrModule,
+    OrdersModule,
   ],
   controllers: [AppController],
   providers: [

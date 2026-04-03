@@ -30,7 +30,7 @@ export class PropertiesController {
     description: 'Add a new property for the authenticated admin user',
   })
   @Rights(Right.SUPER_ADMIN_ADD_PROPERTY)
-  @Post(`${USERS_ROUTES.ADMIN}/properties`)
+  @Post(`/api/${USERS_ROUTES.ADMIN}/properties`)
   async addProperty(@Body() dto: AddPropertyDto, @Req() req: Request | any) {
     const user = req.user.userId; // extracted from JWT by your auth guard
     const res = await this.propertyService.addProperty(dto, user);
@@ -42,7 +42,7 @@ export class PropertiesController {
     summary: 'Update Property',
     description: 'Update an existing property for the authenticated admin user',
   })
-  @Patch(`${USERS_ROUTES.ADMIN}/properties/:propertyId`)
+  @Patch(`/api/${USERS_ROUTES.ADMIN}/properties/:propertyId`)
   @Rights(Right.SUPER_ADMIN_UPDATE_PROPERTY)
   async updateProperty(
     @Param('propertyId') propertyId: UUID,
@@ -66,7 +66,7 @@ export class PropertiesController {
       'Get a single property belonging to the authenticated admin user',
   })
   @Rights(Right.SUPER_ADMIN_GET_PROPERTY)
-  @Get(`${USERS_ROUTES.ADMIN}/properties/:propertyId`)
+  @Get(`/api/${USERS_ROUTES.ADMIN}/properties/:propertyId`)
   async getProperty(
     @Param('propertyId') propertyId: UUID,
     @Req() req: Request | any,
@@ -86,7 +86,7 @@ export class PropertiesController {
     description: 'Get all properties belonging to the authenticated admin user',
   })
   @Rights(Right.SUPER_ADMIN_GET_ALL_PROPERTIES)
-  @Get(`${USERS_ROUTES.ADMIN}/properties`)
+  @Get(`/api/${USERS_ROUTES.ADMIN}/properties`)
   async getAllProperties(@Req() req: Request | any) {
     const adminUserId = req.user.userId;
 

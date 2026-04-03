@@ -16,6 +16,7 @@ import { OutletType } from '../enum/outletType.enum';
 import { Property } from 'src/properties/entity/property.entity';
 import { OutletUnit } from './outletUnit.entity';
 import { Menuitem } from 'src/menuitems/entity/menuitem.entity';
+import { Order } from 'src/orders/entity/order.entity';
 
 @Entity()
 export class Outlet {
@@ -53,6 +54,9 @@ export class Outlet {
 
   @ManyToMany(() => Menuitem, (menuitem) => menuitem.outlets)
   menuitems?: Menuitem[];
+
+  @OneToMany(() => Order, (order) => order.outlet)
+  orders?: Order[];
 
   @Index()
   @Column({ type: 'uuid', nullable: true })

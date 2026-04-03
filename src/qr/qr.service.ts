@@ -38,7 +38,7 @@ export class QrService {
 
     return {
       qrId: property.propertyQr.qrId,
-      url: `/qr/${property.propertyQr.qrId}`,
+      url: `api/qr/${property.propertyQr.qrId}`,
       status: property.propertyQr.status,
     };
   }
