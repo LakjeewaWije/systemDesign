@@ -6,12 +6,16 @@ import {
   CreateDateColumn,
   Entity,
   Index,
+  ManyToMany,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { OutletType } from '../enum/outletType.enum';
 import { Property } from 'src/properties/entity/property.entity';
+import { OutletUnit } from './outletUnit.entity';
+import { Menuitem } from 'src/menuitems/entity/menuitem.entity';
 
 @Entity()
 export class Outlet {
@@ -43,6 +47,12 @@ export class Outlet {
     onDelete: 'CASCADE',
   })
   property?: Property;
+
+  @OneToMany(() => OutletUnit, (unit) => unit.outlet)
+  units?: OutletUnit[];
+
+  @ManyToMany(() => Menuitem, (menuitem) => menuitem.outlets)
+  menuitems?: Menuitem[];
 
   @Index()
   @Column({ type: 'uuid', nullable: true })

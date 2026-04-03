@@ -30,7 +30,7 @@ export class OutletsController {
     description: 'Create an outlet for a specific property',
   })
   @Rights(Right.SUPER_ADMIN_ADD_OUTLET)
-  @Get(`${USERS_ROUTES.ADMIN}/properties/:propertyId/outlets`)
+  @Post(`${USERS_ROUTES.ADMIN}/properties/:propertyId/outlets`)
   async createOutlet(
     @Param('propertyId') propertyId: UUID,
     @Body() dto: CreateOutletDto,

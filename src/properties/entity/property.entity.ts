@@ -2,6 +2,7 @@ import { Exclude } from 'class-transformer';
 import type { UUID } from 'crypto';
 import { Outlet } from 'src/outlets/entity/outlet.entity';
 import { AdminUser } from 'src/users/entity/adminUser.entity';
+import { PropertyQr } from 'src/qr/entities/propertyQr.entity';
 import { CommonStatus } from 'src/utils/enum/commonStatus.enum';
 import {
   Column,
@@ -10,6 +11,7 @@ import {
   Index,
   ManyToOne,
   OneToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -60,6 +62,13 @@ export class Property {
   // ⭐ One Property → Many Outlets
   @OneToMany(() => Outlet, (outlet) => outlet.property)
   outlets?: Outlet[];
+
+  // ⭐ One Property → One QR token
+  @OneToOne(() => PropertyQr, (qr) => qr.property, {
+    cascade: true,
+    onDelete: 'CASCADE',
+  })
+  propertyQr?: PropertyQr;
 
   @Index()
   @Column({ type: 'uuid', nullable: true })

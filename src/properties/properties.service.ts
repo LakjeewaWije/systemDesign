@@ -7,8 +7,9 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { AdminUser } from 'src/users/entity/adminUser.entity';
 import { ILike, Repository } from 'typeorm';
-import { UUID } from 'crypto';
+import { randomUUID, UUID } from 'crypto';
 import { Property } from './entity/property.entity';
+import { PropertyQr } from 'src/qr/entities/propertyQr.entity';
 import { CommonStatus } from 'src/utils/enum/commonStatus.enum';
 import { UpdatePropertyDto } from './dto/update-property.dto';
 import { AddPropertyDto } from './dto/add-property.dto';
@@ -20,6 +21,8 @@ export class PropertiesService {
     private adminUserRepository: Repository<AdminUser>,
     @InjectRepository(Property)
     private propertyRepository: Repository<Property>,
+    @InjectRepository(PropertyQr)
+    private propertyQrRepository: Repository<PropertyQr>,
   ) {}
 
   // add property by admin user
@@ -53,6 +56,15 @@ export class PropertiesService {
         createdBy: userId,
         updatedBy: userId,
       } as Property);
+
+      const propertyQr = this.propertyQrRepository.create({
+        qrId: randomUUID(),
+        status: CommonStatus.ACTIVE,
+        property: res,
+        createdBy: userId,
+        updatedBy: userId,
+      });
+      await this.propertyQrRepository.save(propertyQr);
 
       return res;
     } catch (error) {
