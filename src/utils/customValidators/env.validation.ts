@@ -22,12 +22,12 @@ class EnvironmentVariables {
   // SERVICE_ACCOUNT_JSON: string;
 
   @IsNotEmpty()
-  ENV: string;
+  ENV!: string;
 
   @IsNumber()
   @Min(0)
   @Max(65535)
-  APP_PORT: number;
+  APP_PORT!: number;
 
   // @IsNotEmpty()
   // DB_DOCKER_IMAGE: string;
@@ -35,27 +35,19 @@ class EnvironmentVariables {
   @IsNumber()
   @Min(0)
   @Max(65535)
-  DB_PORT: number;
+  DB_PORT!: number;
 
   @IsNotEmpty()
-  DB_HOST: string;
+  DB_HOST!: string;
 
   @IsNotEmpty()
-  DB_USERNAME: string;
+  DB_USERNAME!: string;
 
   @IsNotEmpty()
-  DB_PASSWORD: string;
+  DB_PASSWORD!: string;
 
   @IsNotEmpty()
-  DB_NAME: string;
-
-  @IsNumber()
-  @Min(0)
-  @Max(65535)
-  NUDENET_DOCKER_EXPOSE_PORT: number;
-
-  @IsNotEmpty()
-  NUDENET_DOCKER_IMAGE: string;
+  DB_NAME!: string;
 }
 
 export function validate(config: Record<string, unknown>) {

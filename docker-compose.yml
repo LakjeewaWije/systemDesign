@@ -12,6 +12,14 @@ services:
       - ${DB_DOCKER_VOLUME}
     ports:
       - '${DB_DOCKER_EXPOSE_PORT}:5432'
+  
+  redis:
+    image: redis:6.2-alpine
+    restart: always
+    volumes:
+      - /redis_volume_data:/data
+    ports:
+      - '${REDIS_PORT}:6379'
   # nudenet:
   #   image: ${NUDENET_DOCKER_IMAGE}
   #   restart: always

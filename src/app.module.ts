@@ -19,12 +19,6 @@ import configuration from './config/configuration';
 import { validate } from './utils/customValidators/env.validation';
 import { HttpExceptionFilter } from './utils/http-exception.filter';
 import { SuccessResponseFilter } from './utils/success-response.filter';
-import { UsersModule } from './users/users.module';
-import { PropertiesModule } from './properties/properties.module';
-import { OutletsModule } from './outlets/outlets.module';
-import { MenuitemModule } from './menuitems/menuitem.module';
-import { QrModule } from './qr/qr.module';
-import { OrdersModule } from './orders/orders.module';
 
 const logDirectory = 'logs';
 const stream = rfs.createStream('application-file.log', {
@@ -118,12 +112,6 @@ const stream = rfs.createStream('application-file.log', {
       serveRoot: '/', // Specify the URL root path to serve the static files
     }),
     NestScheduleModule.forRoot(),
-    UsersModule,
-    PropertiesModule,
-    OutletsModule,
-    MenuitemModule,
-    QrModule,
-    OrdersModule,
   ],
   controllers: [AppController],
   providers: [

@@ -16,10 +16,10 @@ async function bootstrap() {
 
   // register swagger api
   const config = new DocumentBuilder()
-    .setTitle('Menu Plus')
-    .setDescription('The Menu Plus API description')
+    .setTitle('System Design')
+    .setDescription('The System Design API description')
     .setVersion('1.0')
-    .addTag('#Menu Plus')
+    .addTag('#System Design')
     .addBearerAuth()
     .build();
 
