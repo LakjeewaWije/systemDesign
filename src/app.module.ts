@@ -19,6 +19,8 @@ import configuration from './config/configuration';
 import { validate } from './utils/customValidators/env.validation';
 import { HttpExceptionFilter } from './utils/http-exception.filter';
 import { SuccessResponseFilter } from './utils/success-response.filter';
+import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
 
 const logDirectory = 'logs';
 const stream = rfs.createStream('application-file.log', {
@@ -112,6 +114,8 @@ const stream = rfs.createStream('application-file.log', {
       serveRoot: '/', // Specify the URL root path to serve the static files
     }),
     NestScheduleModule.forRoot(),
+    AuthModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [
