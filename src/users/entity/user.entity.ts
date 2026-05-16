@@ -4,6 +4,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   JoinColumn,
   OneToMany,
   OneToOne,
@@ -12,6 +13,8 @@ import {
 } from 'typeorm';
 
 @Entity()
+@Index(['id'], { unique: true })
+@Index(['userId'], { unique: true })
 // @Unique(['mobilePhone'])
 export class User {
   @PrimaryGeneratedColumn()
