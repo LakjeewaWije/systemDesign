@@ -10,7 +10,10 @@ import { LoggerModule } from 'nestjs-pino';
 import { join } from 'path';
 import * as rfs from 'rotating-file-stream';
 import { DataSource } from 'typeorm';
-import { addTransactionalDataSource } from 'typeorm-transactional';
+import {
+  addTransactionalDataSource,
+  deleteDataSourceByName,
+} from 'typeorm-transactional';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 // import { AuditLogInterceptor } from './audits/auditLog.interceptor';
@@ -60,7 +63,11 @@ const stream = rfs.createStream('application-file.log', {
           throw new Error('Invalid options passed');
         }
 
-        return addTransactionalDataSource(new DataSource(options));
+        deleteDataSourceByName('default');
+        return addTransactionalDataSource({
+          name: 'default',
+          dataSource: new DataSource(options),
+        });
       },
       inject: [ConfigService],
     }),
