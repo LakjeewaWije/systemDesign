@@ -23,6 +23,7 @@ import { validate } from './utils/customValidators/env.validation';
 import { HttpExceptionFilter } from './utils/http-exception.filter';
 import { SuccessResponseFilter } from './utils/success-response.filter';
 import { AuthModule } from './auth/auth.module';
+import { BookingsModule } from './bookings/bookings.module';
 import { SchedulesModule } from './schedules/schedules.module';
 import { UsersModule } from './users/users.module';
 
@@ -123,6 +124,7 @@ const stream = rfs.createStream('application-file.log', {
     }),
     NestScheduleModule.forRoot(),
     AuthModule,
+    BookingsModule,
     SchedulesModule,
     UsersModule,
   ],
