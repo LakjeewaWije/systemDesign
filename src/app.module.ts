@@ -73,12 +73,23 @@ const stream = rfs.createStream('application-file.log', {
       inject: [ConfigService],
     }),
     CacheModule.registerAsync({
-      useFactory: async () => ({
-        store: await redisStore({
+      useFactory: async (configService: ConfigService) => {
+        const store = await redisStore({
           ttl: 86400000, //3600000 in ms
-        }),
-      }),
+          socket: {
+            host: configService.get<string>('redis.host') ?? '127.0.0.1',
+            port: Number(configService.get('redis.port') ?? 6379),
+          },
+        });
+
+        store.client.on('error', (error) => {
+          console.error('Redis cache error:', error.message);
+        });
+
+        return { store };
+      },
       isGlobal: true,
+      inject: [ConfigService],
     }),
     LoggerModule.forRootAsync({
       useFactory: async (configService: ConfigService) => {

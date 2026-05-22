@@ -17,4 +17,8 @@ export default () => ({
     serviceAccountEmail: process.env.SERVICE_ACCOUNT_EMAIL,
     serviceAccountJson: process.env.SERVICE_ACCOUNT_JSON,
   },
+  redis: {
+    host: process.env.REDIS_HOST,
+    port: process.env.REDIS_PORT,
+  },
 });
