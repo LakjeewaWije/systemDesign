@@ -6,7 +6,7 @@ import {
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import type { UUID } from 'crypto';
-import { Repository } from 'typeorm';
+import { ObjectLiteral, Repository } from 'typeorm';
 import { DayOfWeek } from '../schedules/enum/dayOfWeek.enum';
 import { Schedule } from '../schedules/entity/schedule.entity';
 import { User } from '../users/entity/user.entity';
@@ -15,11 +15,13 @@ import { BookingsService } from './bookings.service';
 import { Booking } from './entity/booking.entity';
 import { BookingStatus } from './enum/booking-status.enum';
 
-type MockRepository<T = unknown> = Partial<
+type MockRepository<T extends ObjectLiteral = ObjectLiteral> = Partial<
   Record<keyof Repository<T>, jest.Mock>
 >;
 
-const createRepositoryMock = <T = unknown>(): MockRepository<T> => ({
+const createRepositoryMock = <
+  T extends ObjectLiteral,
+>(): MockRepository<T> => ({
   create: jest.fn((entity) => entity),
   find: jest.fn(),
   findOne: jest.fn(),
