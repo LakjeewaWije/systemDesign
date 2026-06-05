@@ -23,6 +23,15 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     env:
       TEST_DB_HOST: 127.0.0.1
@@ -30,6 +39,8 @@ jobs:
       TEST_DB_USERNAME: postgres
       TEST_DB_PASSWORD: postgres
       TEST_DB_NAME: system_design_test
+      TEST_REDIS_HOST: 127.0.0.1
+      TEST_REDIS_PORT: 6379
 
     steps:
       - name: Checkout

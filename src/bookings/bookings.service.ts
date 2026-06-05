@@ -14,6 +14,7 @@ import { ILike, Repository } from 'typeorm';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { Booking } from './entity/booking.entity';
 import { BookingStatus } from './enum/booking-status.enum';
+import { RedisLockService } from './redis-lock.service';
 
 @Injectable()
 export class BookingsService {
@@ -24,6 +25,7 @@ export class BookingsService {
     private schedulesRepository: Repository<Schedule>,
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    private redisLockService: RedisLockService,
   ) {}
 
   async create(
@@ -61,30 +63,42 @@ export class BookingsService {
       createBookingDto.startTime,
     );
 
-    const existingBooking = await this.bookingsRepository.findOne({
-      where: {
-        doctor: { userId: createBookingDto.doctorId as UUID },
-        appointmentDate: createBookingDto.appointmentDate,
-        startTime: createBookingDto.startTime,
-        status: BookingStatus.BOOKED,
-      },
-    });
+    const lock = await this.redisLockService.acquire(
+      this.getBookingLockKey(createBookingDto),
+    );
 
-    if (existingBooking) {
-      throw new ConflictException('This slot is already booked');
+    if (!lock) {
+      throw new ConflictException('This slot is currently being booked');
     }
 
-    const booking = this.bookingsRepository.create({
-      doctor: { userId: createBookingDto.doctorId as UUID },
-      patient: { userId: patientId as UUID },
-      schedule: { scheduleId: schedule.scheduleId },
-      appointmentDate: createBookingDto.appointmentDate,
-      startTime: createBookingDto.startTime,
-      endTime,
-      status: BookingStatus.BOOKED,
-    });
+    try {
+      const existingBooking = await this.bookingsRepository.findOne({
+        where: {
+          doctor: { userId: createBookingDto.doctorId as UUID },
+          appointmentDate: createBookingDto.appointmentDate,
+          startTime: createBookingDto.startTime,
+          status: BookingStatus.BOOKED,
+        },
+      });
 
-    return await this.bookingsRepository.save(booking);
+      if (existingBooking) {
+        throw new ConflictException('This slot is already booked');
+      }
+
+      const booking = this.bookingsRepository.create({
+        doctor: { userId: createBookingDto.doctorId as UUID },
+        patient: { userId: patientId as UUID },
+        schedule: { scheduleId: schedule.scheduleId },
+        appointmentDate: createBookingDto.appointmentDate,
+        startTime: createBookingDto.startTime,
+        endTime,
+        status: BookingStatus.BOOKED,
+      });
+
+      return await this.bookingsRepository.save(booking);
+    } finally {
+      await this.redisLockService.release(lock);
+    }
   }
 
   async findPatientBookings(patientId: string): Promise<Booking[]> {
@@ -173,6 +187,15 @@ export class BookingsService {
     }
 
     return this.toTime(slotEnd);
+  }
+
+  private getBookingLockKey(createBookingDto: CreateBookingDto): string {
+    return [
+      'booking-lock',
+      createBookingDto.doctorId,
+      createBookingDto.appointmentDate,
+      createBookingDto.startTime,
+    ].join(':');
   }
 
   private getDayOfWeek(date: string): DayOfWeek {

@@ -10,6 +10,7 @@ import { DataSource, Repository } from 'typeorm';
 import { BookingsService } from './bookings.service';
 import { Booking } from './entity/booking.entity';
 import { BookingStatus } from './enum/booking-status.enum';
+import { RedisLockService } from './redis-lock.service';
 
 describe('BookingsService integration', () => {
   let module: TestingModule;
@@ -28,7 +29,7 @@ describe('BookingsService integration', () => {
         TypeOrmModule.forRoot({
           type: 'postgres',
           host: process.env.TEST_DB_HOST ?? '127.0.0.1',
-          port: Number(process.env.TEST_DB_PORT ?? 5432),
+          port: Number(process.env.TEST_DB_PORT ?? 5433),
           username: process.env.TEST_DB_USERNAME ?? 'postgres',
           password: process.env.TEST_DB_PASSWORD ?? 'postgres',
           database: process.env.TEST_DB_NAME ?? 'system_design_test',
@@ -40,7 +41,7 @@ describe('BookingsService integration', () => {
         }),
         TypeOrmModule.forFeature([Booking, Schedule, User]),
       ],
-      providers: [BookingsService],
+      providers: [BookingsService, RedisLockService],
     }).compile();
 
     dataSource = module.get(DataSource);
@@ -126,6 +127,37 @@ describe('BookingsService integration', () => {
     await expect(service.create(patientId, dto)).rejects.toBeInstanceOf(
       ConflictException,
     );
+  });
+
+  it('allows only one booking when many patients request the same slot', async () => {
+    const patients = await usersRepository.save(
+      Array.from({ length: 50 }, (_, index) =>
+        usersRepository.create({
+          firstName: 'Concurrent',
+          lastName: `Patient ${index}`,
+          roles: [Role.PATIENT],
+          emailAddress: `patient-${index}.integration@example.com`,
+          countryCode: '+1',
+          mobilePhone: `555200${index.toString().padStart(4, '0')}`,
+          password: 'password',
+        }),
+      ),
+    );
+
+    const bookingAttempts = await Promise.allSettled(
+      patients.map((patient) =>
+        service.create(patient.userId as string, {
+          doctorId,
+          appointmentDate: '2026-05-25',
+          startTime: '09:30',
+        }),
+      ),
+    );
+
+    expect(
+      bookingAttempts.filter((result) => result.status === 'fulfilled'),
+    ).toHaveLength(1);
+    expect(await bookingsRepository.count()).toBe(1);
   });
 
   it('cancels a booking', async () => {

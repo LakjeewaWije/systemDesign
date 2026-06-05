@@ -1,11 +1,9 @@
-import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { ScheduleModule as NestScheduleModule } from '@nestjs/schedule';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { redisStore } from 'cache-manager-redis-yet';
 import { LoggerModule } from 'nestjs-pino';
 import { join } from 'path';
 import * as rfs from 'rotating-file-stream';
@@ -70,25 +68,6 @@ const stream = rfs.createStream('application-file.log', {
           dataSource: new DataSource(options),
         });
       },
-      inject: [ConfigService],
-    }),
-    CacheModule.registerAsync({
-      useFactory: async (configService: ConfigService) => {
-        const store = await redisStore({
-          ttl: 86400000, //3600000 in ms
-          socket: {
-            host: configService.get<string>('redis.host') ?? '127.0.0.1',
-            port: Number(configService.get('redis.port') ?? 6379),
-          },
-        });
-
-        store.client.on('error', (error) => {
-          console.error('Redis cache error:', error.message);
-        });
-
-        return { store };
-      },
-      isGlobal: true,
       inject: [ConfigService],
     }),
     LoggerModule.forRootAsync({

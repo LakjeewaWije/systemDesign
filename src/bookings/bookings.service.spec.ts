@@ -14,6 +14,7 @@ import { Role } from '../utils/enum/role.enum';
 import { BookingsService } from './bookings.service';
 import { Booking } from './entity/booking.entity';
 import { BookingStatus } from './enum/booking-status.enum';
+import { RedisLockService } from './redis-lock.service';
 
 type MockRepository<T extends ObjectLiteral = ObjectLiteral> = Partial<
   Record<keyof Repository<T>, jest.Mock>
@@ -33,6 +34,10 @@ describe('BookingsService', () => {
   let bookingsRepository: MockRepository<Booking>;
   let schedulesRepository: MockRepository<Schedule>;
   let usersRepository: MockRepository<User>;
+  let redisLockService: {
+    acquire: jest.Mock;
+    release: jest.Mock;
+  };
 
   const patientId = '6cd35374-e0a4-4d8d-8e84-c32a9c0af287';
   const doctorId = '5783bd24-56ba-42fc-a026-9ae9a99bb175';
@@ -51,6 +56,12 @@ describe('BookingsService', () => {
     bookingsRepository = createRepositoryMock<Booking>();
     schedulesRepository = createRepositoryMock<Schedule>();
     usersRepository = createRepositoryMock<User>();
+    redisLockService = {
+      acquire: jest.fn((key: string) =>
+        Promise.resolve({ key, token: 'lock-token' }),
+      ),
+      release: jest.fn(() => Promise.resolve()),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -66,6 +77,10 @@ describe('BookingsService', () => {
         {
           provide: getRepositoryToken(User),
           useValue: usersRepository,
+        },
+        {
+          provide: RedisLockService,
+          useValue: redisLockService,
         },
       ],
     }).compile();
@@ -96,6 +111,13 @@ describe('BookingsService', () => {
       status: BookingStatus.BOOKED,
     });
     expect(bookingsRepository.save).toHaveBeenCalledWith(booking);
+    expect(redisLockService.acquire).toHaveBeenCalledWith(
+      `booking-lock:${doctorId}:2026-05-25:09:30`,
+    );
+    expect(redisLockService.release).toHaveBeenCalledWith({
+      key: `booking-lock:${doctorId}:2026-05-25:09:30`,
+      token: 'lock-token',
+    });
   });
 
   it('throws when the patient does not exist', async () => {
@@ -226,6 +248,32 @@ describe('BookingsService', () => {
         startTime: '09:30',
       }),
     ).rejects.toBeInstanceOf(ConflictException);
+    expect(redisLockService.release).toHaveBeenCalled();
+  });
+
+  it('throws when the requested slot lock is already held', async () => {
+    usersRepository.findOne
+      ?.mockResolvedValueOnce({ userId: patientId, roles: [Role.PATIENT] })
+      .mockResolvedValueOnce({ userId: doctorId, roles: [Role.DOCTOR] });
+    schedulesRepository.findOne?.mockResolvedValue(schedule);
+    redisLockService.acquire.mockResolvedValue(null);
+
+    await expect(
+      service.create(patientId, {
+        doctorId,
+        appointmentDate: '2026-05-25',
+        startTime: '09:30',
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(bookingsRepository.findOne).not.toHaveBeenCalledWith({
+      where: {
+        doctor: { userId: doctorId },
+        appointmentDate: '2026-05-25',
+        startTime: '09:30',
+        status: BookingStatus.BOOKED,
+      },
+    });
+    expect(redisLockService.release).not.toHaveBeenCalled();
   });
 
   it('returns patient bookings ordered by date and time', async () => {
