@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Booking Payment Demo</title>
+    <script src="https://js.stripe.com/v3/"></script>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+        color: #172026;
+        background: #f4f7f6;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+      }
+
+      main {
+        width: min(980px, calc(100vw - 32px));
+        margin: 0 auto;
+        padding: 32px 0;
+      }
+
+      h1 {
+        margin: 0 0 20px;
+        font-size: 28px;
+        font-weight: 750;
+        letter-spacing: 0;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(320px, 0.9fr);
+        gap: 16px;
+        align-items: start;
+      }
+
+      section {
+        background: #ffffff;
+        border: 1px solid #d8e1dd;
+        border-radius: 8px;
+        padding: 18px;
+        box-shadow: 0 10px 30px rgba(25, 48, 40, 0.08);
+      }
+
+      h2 {
+        margin: 0 0 14px;
+        font-size: 16px;
+        letter-spacing: 0;
+      }
+
+      label {
+        display: grid;
+        gap: 6px;
+        margin-bottom: 12px;
+        font-size: 13px;
+        font-weight: 650;
+      }
+
+      input {
+        width: 100%;
+        min-height: 42px;
+        border: 1px solid #b8c8c2;
+        border-radius: 6px;
+        padding: 9px 11px;
+        font: inherit;
+        color: #172026;
+        background: #ffffff;
+      }
+
+      input:focus {
+        border-color: #217c67;
+        outline: 3px solid rgba(33, 124, 103, 0.18);
+      }
+
+      button {
+        min-height: 42px;
+        border: 0;
+        border-radius: 6px;
+        padding: 0 14px;
+        font: inherit;
+        font-weight: 750;
+        color: #ffffff;
+        background: #217c67;
+        cursor: pointer;
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.55;
+      }
+
+      .secondary {
+        color: #172026;
+        background: #dbe8e3;
+      }
+
+      .actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 6px;
+      }
+
+      #payment-element {
+        min-height: 120px;
+        margin-bottom: 14px;
+      }
+
+      pre {
+        min-height: 180px;
+        overflow: auto;
+        margin: 14px 0 0;
+        border-radius: 6px;
+        padding: 12px;
+        font-size: 12px;
+        line-height: 1.45;
+        color: #d8f3ea;
+        background: #15211d;
+      }
+
+      .status {
+        min-height: 24px;
+        margin-top: 12px;
+        font-size: 13px;
+        color: #4f625b;
+      }
+
+      @media (max-width: 780px) {
+        main {
+          width: min(100vw - 20px, 560px);
+          padding: 18px 0;
+        }
+
+        .layout {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Booking Payment Demo</h1>
+
+      <div class="layout">
+        <section>
+          <h2>Create Booking</h2>
+          <form id="booking-form">
+            <label>
+              Bearer token
+              <input id="token" autocomplete="off" required />
+            </label>
+            <label>
+              Stripe publishable key
+              <input
+                id="publishable-key"
+                autocomplete="off"
+                placeholder="pk_test_..."
+                required
+              />
+            </label>
+            <label>
+              Doctor ID
+              <input id="doctor-id" autocomplete="off" required />
+            </label>
+            <label>
+              Appointment date
+              <input id="appointment-date" type="date" required />
+            </label>
+            <label>
+              Start time
+              <input id="start-time" type="time" required />
+            </label>
+            <label>
+              Idempotency key
+              <input id="idempotency-key" autocomplete="off" required />
+            </label>
+            <div class="actions">
+              <button id="create-button" type="submit">Create Payment</button>
+              <button class="secondary" id="new-key-button" type="button">
+                New Key
+              </button>
+            </div>
+          </form>
+          <pre id="result">{}</pre>
+        </section>
+
+        <section>
+          <h2>Pay</h2>
+          <form id="payment-form">
+            <div id="payment-element"></div>
+            <button id="pay-button" type="submit" disabled>Pay Booking</button>
+          </form>
+          <div class="status" id="status"></div>
+        </section>
+      </div>
+    </main>
+
+    <script>
+      const bookingForm = document.querySelector('#booking-form');
+      const paymentForm = document.querySelector('#payment-form');
+      const createButton = document.querySelector('#create-button');
+      const payButton = document.querySelector('#pay-button');
+      const newKeyButton = document.querySelector('#new-key-button');
+      const result = document.querySelector('#result');
+      const status = document.querySelector('#status');
+      const idempotencyKey = document.querySelector('#idempotency-key');
+
+      let stripe;
+      let elements;
+      let currentBookingId;
+
+      function setStatus(message) {
+        status.textContent = message;
+      }
+
+      function setResult(value) {
+        result.textContent = JSON.stringify(value, null, 2);
+      }
+
+      function resetKey() {
+        idempotencyKey.value = crypto.randomUUID();
+      }
+
+      async function createBooking(event) {
+        event.preventDefault();
+        createButton.disabled = true;
+        payButton.disabled = true;
+        setStatus('Creating payment...');
+
+        const token = document.querySelector('#token').value.trim();
+        const publishableKey = document
+          .querySelector('#publishable-key')
+          .value.trim();
+
+        try {
+          const response = await fetch('/bookings', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              doctorId: document.querySelector('#doctor-id').value.trim(),
+              appointmentDate:
+                document.querySelector('#appointment-date').value,
+              startTime: document.querySelector('#start-time').value,
+              idempotencyKey: idempotencyKey.value.trim(),
+            }),
+          });
+
+          const payload = await response.json();
+          setResult(payload);
+
+          if (!response.ok) {
+            throw new Error(
+              payload?.message ??
+                payload?.errors?.message ??
+                'Could not create payment',
+            );
+          }
+
+          const bookingPayment = payload.data ?? payload;
+          const clientSecret = bookingPayment.payment?.clientSecret;
+          currentBookingId = bookingPayment.booking?.bookingId;
+
+          if (!clientSecret) {
+            throw new Error('No Stripe client secret returned');
+          }
+
+          if (!currentBookingId) {
+            throw new Error('No booking ID returned');
+          }
+
+          stripe = Stripe(publishableKey);
+          elements = stripe.elements({ clientSecret });
+          elements.create('payment').mount('#payment-element');
+          payButton.disabled = false;
+          setStatus('Payment form ready.');
+        } catch (error) {
+          setStatus(error.message);
+        } finally {
+          createButton.disabled = false;
+        }
+      }
+
+      async function payBooking(event) {
+        event.preventDefault();
+
+        if (!stripe || !elements) {
+          return;
+        }
+
+        payButton.disabled = true;
+        setStatus('Confirming payment...');
+
+        const { error, paymentIntent } = await stripe.confirmPayment({
+          elements,
+          redirect: 'if_required',
+          confirmParams: {
+            return_url: `${window.location.origin}/payment-demo.html`,
+          },
+        });
+
+        if (error) {
+          setStatus(error.message);
+          payButton.disabled = false;
+          return;
+        }
+
+        if (paymentIntent?.status === 'succeeded') {
+          await syncPaymentStatus();
+          setStatus('Payment succeeded. Booking synced.');
+          return;
+        }
+
+        setStatus(`Payment status: ${paymentIntent?.status ?? 'unknown'}`);
+        payButton.disabled = false;
+      }
+
+      async function syncPaymentStatus() {
+        const token = document.querySelector('#token').value.trim();
+
+        const response = await fetch(
+          `/bookings/${currentBookingId}/sync-payment`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          },
+        );
+
+        const payload = await response.json();
+        setResult(payload);
+
+        if (!response.ok) {
+          throw new Error(
+            payload?.message ??
+              payload?.errors?.message ??
+              'Could not sync payment status',
+          );
+        }
+      }
+
+      resetKey();
+      newKeyButton.addEventListener('click', resetKey);
+      bookingForm.addEventListener('submit', createBooking);
+      paymentForm.addEventListener('submit', payBooking);
+    </script>
+  </body>
+</html>

@@ -51,9 +51,24 @@ export class Booking {
   @Column({
     type: 'enum',
     enum: BookingStatus,
-    default: BookingStatus.BOOKED,
+    default: BookingStatus.PENDING_PAYMENT,
   })
   status?: BookingStatus;
+
+  @Column({ type: 'varchar', nullable: true })
+  paymentIntentId?: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  paymentClientSecret?: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  paymentIdempotencyKey?: string | null;
+
+  @Column({ type: 'int', nullable: true })
+  paymentAmount?: number | null;
+
+  @Column({ type: 'varchar', length: 3, nullable: true })
+  paymentCurrency?: string | null;
 
   @CreateDateColumn({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
   createdAt?: Date;

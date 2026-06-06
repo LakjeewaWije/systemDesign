@@ -109,7 +109,7 @@ const stream = rfs.createStream('application-file.log', {
       inject: [ConfigService],
     }),
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', '../public'), // Specify the directory where your static files are located
+      rootPath: join(process.cwd(), 'public'), // Specify the directory where your static files are located
       serveRoot: '/', // Specify the URL root path to serve the static files
     }),
     NestScheduleModule.forRoot(),

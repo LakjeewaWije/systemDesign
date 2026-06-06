@@ -48,6 +48,21 @@ export class BookingsController {
   }
 
   @Roles(Role.PATIENT)
+  @Post('/:bookingId/sync-payment')
+  @ApiOperation({
+    summary: 'Sync authenticated patient booking payment status',
+  })
+  async syncPayment(
+    @Param('bookingId', ParseUUIDPipe) bookingId: string,
+    @Req() req: Request,
+  ) {
+    return await this.bookingsService.syncBookingPayment(
+      this.getAuthUserId(req),
+      bookingId,
+    );
+  }
+
+  @Roles(Role.PATIENT)
   @Delete('/:bookingId')
   @ApiOperation({ summary: 'Cancel authenticated patient booking' })
   async cancel(

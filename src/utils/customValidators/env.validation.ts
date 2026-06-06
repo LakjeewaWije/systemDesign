@@ -64,6 +64,17 @@ class EnvironmentVariables {
   @Min(0)
   @Max(65535)
   REDIS_PORT?: number;
+
+  @IsOptional()
+  STRIPE_SECRET_KEY?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  BOOKING_PAYMENT_AMOUNT_CENTS?: number;
+
+  @IsOptional()
+  BOOKING_PAYMENT_CURRENCY?: string;
 }
 
 export function validate(config: Record<string, unknown>) {

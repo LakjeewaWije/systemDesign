@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsUUID, Matches } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsUUID, Matches } from 'class-validator';
 
 export class CreateBookingDto {
   @IsUUID()
@@ -16,4 +16,12 @@ export class CreateBookingDto {
   @IsNotEmpty()
   @ApiProperty({ example: '09:30' })
   startTime!: string;
+
+  @IsUUID()
+  @IsOptional()
+  @ApiProperty({
+    required: false,
+    example: '9a4c7fc8-f3ce-4fdb-9310-555ecbb4a801',
+  })
+  idempotencyKey?: string;
 }
