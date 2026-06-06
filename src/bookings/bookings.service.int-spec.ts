@@ -11,6 +11,7 @@ import { BookingsService } from './bookings.service';
 import { Booking } from './entity/booking.entity';
 import { BookingStatus } from './enum/booking-status.enum';
 import { RedisLockService } from './redis-lock.service';
+import { StripePaymentsService } from './stripe-payments.service';
 
 describe('BookingsService integration', () => {
   let module: TestingModule;
@@ -41,7 +42,24 @@ describe('BookingsService integration', () => {
         }),
         TypeOrmModule.forFeature([Booking, Schedule, User]),
       ],
-      providers: [BookingsService, RedisLockService],
+      providers: [
+        BookingsService,
+        RedisLockService,
+        {
+          provide: StripePaymentsService,
+          useValue: {
+            getBookingPaymentAmount: jest.fn(() => 5000),
+            getBookingPaymentCurrency: jest.fn(() => 'usd'),
+            createPaymentIntent: jest.fn(({ bookingId }) =>
+              Promise.resolve({
+                id: `pi_${bookingId}`,
+                client_secret: `secret_${bookingId}`,
+                status: 'requires_payment_method',
+              }),
+            ),
+          },
+        },
+      ],
     }).compile();
 
     dataSource = module.get(DataSource);
@@ -102,17 +120,20 @@ describe('BookingsService integration', () => {
   });
 
   it('creates a booking', async () => {
-    const booking = await service.create(patientId, {
+    const result = await service.create(patientId, {
       doctorId,
       appointmentDate: '2026-05-25',
       startTime: '09:30',
     });
 
+    const booking = result.booking;
+
     expect(booking.bookingId).toBeDefined();
     expect(booking.appointmentDate).toBe('2026-05-25');
     expect(booking.startTime).toBe('09:30');
     expect(booking.endTime).toBe('10:00');
-    expect(booking.status).toBe(BookingStatus.BOOKED);
+    expect(booking.status).toBe(BookingStatus.PENDING_PAYMENT);
+    expect(result.payment.clientSecret).toBe(`secret_${booking.bookingId}`);
   });
 
   it('throws conflict for a duplicate booking', async () => {
@@ -161,11 +182,12 @@ describe('BookingsService integration', () => {
   });
 
   it('cancels a booking', async () => {
-    const booking = await service.create(patientId, {
+    const result = await service.create(patientId, {
       doctorId,
       appointmentDate: '2026-05-25',
       startTime: '09:30',
     });
+    const booking = result.booking;
 
     await expect(
       service.cancel(patientId, booking.bookingId as string),

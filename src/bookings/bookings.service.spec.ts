@@ -15,6 +15,7 @@ import { BookingsService } from './bookings.service';
 import { Booking } from './entity/booking.entity';
 import { BookingStatus } from './enum/booking-status.enum';
 import { RedisLockService } from './redis-lock.service';
+import { StripePaymentsService } from './stripe-payments.service';
 
 type MockRepository<T extends ObjectLiteral = ObjectLiteral> = Partial<
   Record<keyof Repository<T>, jest.Mock>
@@ -37,6 +38,11 @@ describe('BookingsService', () => {
   let redisLockService: {
     acquire: jest.Mock;
     release: jest.Mock;
+  };
+  let stripePaymentsService: {
+    getBookingPaymentAmount: jest.Mock;
+    getBookingPaymentCurrency: jest.Mock;
+    createPaymentIntent: jest.Mock;
   };
 
   const patientId = '6cd35374-e0a4-4d8d-8e84-c32a9c0af287';
@@ -62,6 +68,17 @@ describe('BookingsService', () => {
       ),
       release: jest.fn(() => Promise.resolve()),
     };
+    stripePaymentsService = {
+      getBookingPaymentAmount: jest.fn(() => 5000),
+      getBookingPaymentCurrency: jest.fn(() => 'usd'),
+      createPaymentIntent: jest.fn(() =>
+        Promise.resolve({
+          id: 'pi_test',
+          client_secret: 'pi_test_secret',
+          status: 'requires_payment_method',
+        }),
+      ),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -82,6 +99,10 @@ describe('BookingsService', () => {
           provide: RedisLockService,
           useValue: redisLockService,
         },
+        {
+          provide: StripePaymentsService,
+          useValue: stripePaymentsService,
+        },
       ],
     }).compile();
 
@@ -95,22 +116,34 @@ describe('BookingsService', () => {
     schedulesRepository.findOne?.mockResolvedValue(schedule);
     bookingsRepository.findOne?.mockResolvedValue(null);
 
-    const booking = await service.create(patientId, {
+    const result = await service.create(patientId, {
       doctorId,
       appointmentDate: '2026-05-25',
       startTime: '09:30',
     });
 
-    expect(booking).toEqual({
-      doctor: { userId: doctorId },
-      patient: { userId: patientId },
-      schedule: { scheduleId },
-      appointmentDate: '2026-05-25',
-      startTime: '09:30',
-      endTime: '10:00',
-      status: BookingStatus.BOOKED,
+    expect(result).toEqual({
+      booking: {
+        doctor: { userId: doctorId },
+        patient: { userId: patientId },
+        schedule: { scheduleId },
+        appointmentDate: '2026-05-25',
+        startTime: '09:30',
+        endTime: '10:00',
+        status: BookingStatus.PENDING_PAYMENT,
+        paymentIdempotencyKey: `booking-payment:${patientId}:${doctorId}:2026-05-25:09:30`,
+        paymentAmount: 5000,
+        paymentCurrency: 'usd',
+        paymentIntentId: 'pi_test',
+        paymentClientSecret: 'pi_test_secret',
+      },
+      payment: {
+        clientSecret: 'pi_test_secret',
+        amount: 5000,
+        currency: 'usd',
+      },
     });
-    expect(bookingsRepository.save).toHaveBeenCalledWith(booking);
+    expect(stripePaymentsService.createPaymentIntent).toHaveBeenCalled();
     expect(redisLockService.acquire).toHaveBeenCalledWith(
       `booking-lock:${doctorId}:2026-05-25:09:30`,
     );
@@ -274,6 +307,25 @@ describe('BookingsService', () => {
       },
     });
     expect(redisLockService.release).not.toHaveBeenCalled();
+  });
+
+  it('marks a booking as booked when Stripe payment succeeds', async () => {
+    const booking = {
+      bookingId: 'booking-id' as UUID,
+      paymentIntentId: 'pi_test',
+      status: BookingStatus.PENDING_PAYMENT,
+    };
+    bookingsRepository.findOne?.mockResolvedValue(booking);
+
+    await service.handleStripeWebhook({
+      type: 'payment_intent.succeeded',
+      data: { object: { id: 'pi_test' } },
+    });
+
+    expect(bookingsRepository.save).toHaveBeenCalledWith({
+      ...booking,
+      status: BookingStatus.BOOKED,
+    });
   });
 
   it('returns patient bookings ordered by date and time', async () => {

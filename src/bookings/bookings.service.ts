@@ -10,11 +10,13 @@ import { DayOfWeek } from 'src/schedules/enum/dayOfWeek.enum';
 import { Schedule } from 'src/schedules/entity/schedule.entity';
 import { User } from 'src/users/entity/user.entity';
 import { Role } from 'src/utils/enum/role.enum';
-import { ILike, Repository } from 'typeorm';
+import { ILike, In, Repository } from 'typeorm';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { StripeWebhookDto } from './dto/stripe-webhook.dto';
 import { Booking } from './entity/booking.entity';
 import { BookingStatus } from './enum/booking-status.enum';
 import { RedisLockService } from './redis-lock.service';
+import { StripePaymentsService } from './stripe-payments.service';
 
 @Injectable()
 export class BookingsService {
@@ -26,12 +28,20 @@ export class BookingsService {
     @InjectRepository(User)
     private usersRepository: Repository<User>,
     private redisLockService: RedisLockService,
+    private stripePaymentsService: StripePaymentsService,
   ) {}
 
   async create(
     patientId: string,
     createBookingDto: CreateBookingDto,
-  ): Promise<Booking> {
+  ): Promise<{
+    booking: Booking;
+    payment: {
+      clientSecret?: string | null;
+      amount?: number | null;
+      currency?: string | null;
+    };
+  }> {
     await this.validateUserRole(patientId, Role.PATIENT, 'Patient');
     await this.validateUserRole(
       createBookingDto.doctorId,
@@ -77,11 +87,21 @@ export class BookingsService {
           doctor: { userId: createBookingDto.doctorId as UUID },
           appointmentDate: createBookingDto.appointmentDate,
           startTime: createBookingDto.startTime,
-          status: BookingStatus.BOOKED,
+          status: In([BookingStatus.PENDING_PAYMENT, BookingStatus.BOOKED]),
         },
+        relations: { patient: true },
       });
 
       if (existingBooking) {
+        if (
+          createBookingDto.idempotencyKey &&
+          existingBooking.paymentIdempotencyKey ===
+            createBookingDto.idempotencyKey &&
+          existingBooking.patient?.userId === patientId
+        ) {
+          return this.toPaymentResponse(existingBooking);
+        }
+
         throw new ConflictException('This slot is already booked');
       }
 
@@ -92,13 +112,72 @@ export class BookingsService {
         appointmentDate: createBookingDto.appointmentDate,
         startTime: createBookingDto.startTime,
         endTime,
-        status: BookingStatus.BOOKED,
+        status: BookingStatus.PENDING_PAYMENT,
+        paymentIdempotencyKey:
+          createBookingDto.idempotencyKey ??
+          this.getBookingPaymentKey(patientId, createBookingDto),
+        paymentAmount: this.stripePaymentsService.getBookingPaymentAmount(),
+        paymentCurrency: this.stripePaymentsService.getBookingPaymentCurrency(),
       });
 
-      return await this.bookingsRepository.save(booking);
+      const pendingBooking = await this.bookingsRepository.save(booking);
+
+      try {
+        const paymentIntent =
+          await this.stripePaymentsService.createPaymentIntent({
+            amount: pendingBooking.paymentAmount as number,
+            currency: pendingBooking.paymentCurrency as string,
+            idempotencyKey: pendingBooking.paymentIdempotencyKey as string,
+            bookingId: pendingBooking.bookingId as string,
+            patientId,
+          });
+
+        pendingBooking.paymentIntentId = paymentIntent.id;
+        pendingBooking.paymentClientSecret = paymentIntent.client_secret;
+
+        return this.toPaymentResponse(
+          await this.bookingsRepository.save(pendingBooking),
+        );
+      } catch (error) {
+        pendingBooking.status = BookingStatus.CANCELLED;
+        await this.bookingsRepository.save(pendingBooking);
+        throw error;
+      }
     } finally {
       await this.redisLockService.release(lock);
     }
+  }
+
+  async handleStripeWebhook(event: StripeWebhookDto): Promise<void> {
+    const paymentIntentId = event.data?.object?.id;
+
+    if (!paymentIntentId) {
+      return;
+    }
+
+    if (
+      event.type !== 'payment_intent.succeeded' &&
+      event.type !== 'payment_intent.payment_failed' &&
+      event.type !== 'payment_intent.canceled'
+    ) {
+      return;
+    }
+
+    const booking = await this.bookingsRepository.findOne({
+      where: { paymentIntentId },
+    });
+
+    if (!booking) {
+      return;
+    }
+
+    if (event.type === 'payment_intent.succeeded') {
+      booking.status = BookingStatus.BOOKED;
+    } else {
+      booking.status = BookingStatus.CANCELLED;
+    }
+
+    await this.bookingsRepository.save(booking);
   }
 
   async findPatientBookings(patientId: string): Promise<Booking[]> {
@@ -196,6 +275,37 @@ export class BookingsService {
       createBookingDto.appointmentDate,
       createBookingDto.startTime,
     ].join(':');
+  }
+
+  private getBookingPaymentKey(
+    patientId: string,
+    createBookingDto: CreateBookingDto,
+  ): string {
+    return [
+      'booking-payment',
+      patientId,
+      createBookingDto.doctorId,
+      createBookingDto.appointmentDate,
+      createBookingDto.startTime,
+    ].join(':');
+  }
+
+  private toPaymentResponse(booking: Booking): {
+    booking: Booking;
+    payment: {
+      clientSecret?: string | null;
+      amount?: number | null;
+      currency?: string | null;
+    };
+  } {
+    return {
+      booking,
+      payment: {
+        clientSecret: booking.paymentClientSecret,
+        amount: booking.paymentAmount,
+        currency: booking.paymentCurrency,
+      },
+    };
   }
 
   private getDayOfWeek(date: string): DayOfWeek {

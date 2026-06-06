@@ -21,4 +21,9 @@ export default () => ({
     host: process.env.REDIS_HOST,
     port: process.env.REDIS_PORT,
   },
+  stripe: {
+    secretKey: process.env.STRIPE_SECRET_KEY,
+    bookingAmount: process.env.BOOKING_PAYMENT_AMOUNT_CENTS ?? '5000',
+    currency: process.env.BOOKING_PAYMENT_CURRENCY ?? 'usd',
+  },
 });
