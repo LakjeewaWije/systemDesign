@@ -57,4 +57,26 @@ export class StripePaymentsService {
       throw error;
     }
   }
+
+  async retrievePaymentIntent(
+    paymentIntentId: string,
+  ): Promise<StripePaymentIntent> {
+    const secretKey = this.configService.get<string>('stripe.secretKey');
+
+    if (!secretKey) {
+      throw new BadRequestException('Stripe secret key is not configured');
+    }
+
+    const stripe = new Stripe(secretKey);
+
+    try {
+      return await stripe.paymentIntents.retrieve(paymentIntentId);
+    } catch (error) {
+      if (error instanceof Stripe.errors.StripeError) {
+        throw new BadRequestException(error.message);
+      }
+
+      throw error;
+    }
+  }
 }

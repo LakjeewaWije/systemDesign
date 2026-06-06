@@ -190,6 +190,41 @@ export class BookingsService {
     });
   }
 
+  async syncBookingPayment(
+    patientId: string,
+    bookingId: string,
+  ): Promise<Booking> {
+    const booking = await this.bookingsRepository.findOne({
+      where: {
+        bookingId: bookingId as UUID,
+        patient: { userId: patientId as UUID },
+      },
+    });
+
+    if (!booking) {
+      throw new NotFoundException(`Booking with id ${bookingId} not found`);
+    }
+
+    if (!booking.paymentIntentId) {
+      throw new BadRequestException('Booking does not have a payment intent');
+    }
+
+    const paymentIntent =
+      await this.stripePaymentsService.retrievePaymentIntent(
+        booking.paymentIntentId,
+      );
+
+    if (paymentIntent.status === 'succeeded') {
+      booking.status = BookingStatus.BOOKED;
+    }
+
+    if (paymentIntent.status === 'canceled') {
+      booking.status = BookingStatus.CANCELLED;
+    }
+
+    return await this.bookingsRepository.save(booking);
+  }
+
   async cancel(
     patientId: string,
     bookingId: string,
